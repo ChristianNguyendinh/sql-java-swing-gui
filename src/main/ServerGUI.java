@@ -71,7 +71,9 @@ public class ServerGUI {
 					//		- Have a separate method that returns the number of tables found
 					//		- Then do this to get a dataset for each table
 					//		- Then make a method HERE to add a table tab to the gui
-					ServerConnection.accessDatabase(columnNames, data);
+					Object[] table_data = ServerConnection.accessDatabase();
+					columnNames = (String[]) table_data[0];
+					data = (Object[][]) table_data[1];
 					
 					ServerGUI window = new ServerGUI();
 					window.frame.setVisible(true);
