@@ -20,7 +20,7 @@ import java.awt.event.MouseEvent;
 public class ServerGUI {
 
 	private JFrame frame;
-	private static String[] columnNames = {"id", "name"};
+	/* private static String[] columnNames = {"id", "name"};
 	private static Object[][] data = {
 			{new Integer(1), "me"}, 
 			{new Integer(2), "you"},
@@ -53,7 +53,10 @@ public class ServerGUI {
 			{new Integer(9), "rr"},
 			{new Integer(10), "wwww"},
 			{new Integer(11), "qq"},
-	};
+	};*/
+	
+	private static String[] columnNames = null;
+	private static Object[][] data = null;
 
 	/**
 	 * Launch the application.
@@ -63,6 +66,11 @@ public class ServerGUI {
 			public void run() {
 				try {
 					// Set up database. Test code. Move to DB panel after testing
+					// parameters should be initially null, method will assign values to them
+					// CURRENTLY ONLY WORKS WITH ONE TABLE
+					//		- Have a separate method that returns the number of tables found
+					//		- Then do this to get a dataset for each table
+					//		- Then make a method HERE to add a table tab to the gui
 					ServerConnection.accessDatabase(columnNames, data);
 					
 					ServerGUI window = new ServerGUI();
