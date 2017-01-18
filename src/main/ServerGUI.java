@@ -26,81 +26,28 @@ import javax.swing.JTextArea;
 public class ServerGUI {
 
 	private JFrame frame;
-	/* private static String[] columnNames = {"id", "name"};
-	private static Object[][] data = {
-			{new Integer(1), "me"}, 
-			{new Integer(2), "you"},
-			{new Integer(3), "fdsa"},
-			{new Integer(4), "ff"},
-			{new Integer(5), "dd"},
-			{new Integer(6), "aa"},
-			{new Integer(7), "ss"},
-			{new Integer(8), "gg"},
-			{new Integer(9), "rr"},
-			{new Integer(10), "wwww"},
-			{new Integer(11), "qq"}, 
-			{new Integer(2), "you"},
-			{new Integer(3), "fdsa"},
-			{new Integer(4), "ff"},
-			{new Integer(5), "dd"},
-			{new Integer(6), "aa"},
-			{new Integer(7), "ss"},
-			{new Integer(8), "gg"},
-			{new Integer(9), "rr"},
-			{new Integer(10), "wwww"},
-			{new Integer(11), "qq"}, 
-			{new Integer(2), "you"},
-			{new Integer(3), "fdsa"},
-			{new Integer(4), "ff"},
-			{new Integer(5), "dd"},
-			{new Integer(6), "aa"},
-			{new Integer(7), "ss"},
-			{new Integer(8), "gg"},
-			{new Integer(9), "rr"},
-			{new Integer(10), "wwww"},
-			{new Integer(11), "qq"},
-	};*/
-	
-	//private static String[] columnNames = null;
-	//private static Object[][] data = null;
-	//private static int numRows = 0;
-	//private static int numCols = 0;
-	//private static String typesArrayString = null;
-	
 	// Array containing dataTable objects corresponding to each table in the DB
 	private static DataTable[] tables = new DataTable[0];
-	private JTextField textField_1;
-	
+	private JTabbedPane tabbedPane;	
 
 	/**
 	 * Launch the application.
 	 */
 	public static void main(String[] args) {
+		// close connection on exit
+		Runtime.getRuntime().addShutdownHook(new Thread() {
+			public void run() {
+				ServerConnection.closeConnection();
+			}
+		});
+		
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
 				try {
-					// Set up database. Test code. Move to DB panel after testing
-					// parameters should be initially null, method will assign values to them
-					// CURRENTLY ONLY WORKS WITH ONE TABLE
-					//		- Have a separate method that returns the number of tables found
-					//		- Then do this to get a dataset for each table
-					//		- Then make a method HERE to add a table tab to the gui
-					
-					// Create the datatable(s) for display
-					
-					// Move this to a separate method, have the db panel call that method on submit
-					// add param for the dB path to connect to. FULL PATH!!!!!!!
-					// also have method reshow the custom query page
-					tables = ServerConnection.accessDatabase();
-					if (tables.length == 0) {
-						throw new NoDatabaseException();
-					}
-					
+					//String fullPath = "/Users/christian/Documents/workspace/SQLGUI/src/main/test.db";
 					
 					ServerGUI window = new ServerGUI();
 					window.frame.setVisible(true);
-				} catch (NoDatabaseException ndbe) {
-					System.err.println(ndbe.getMessage());
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
@@ -113,6 +60,30 @@ public class ServerGUI {
 	 */
 	public ServerGUI() {
 		initialize();
+	}
+	
+	// Set up database. Test code. Move to DB panel after testing
+	// parameters should be initially null, method will assign values to them
+	private void connectToDB(String fullPath) {
+		try {
+			ServerConnection.accessDatabase(fullPath);
+			tables = ServerConnection.getTableInfo();
+			
+			if (tables.length == 0) {
+				throw new NoDatabaseException();
+			}
+			
+			// Create the tables tab
+			for (int i = 0; i < tables.length; i++) {
+				createTableTabs(tabbedPane, tables[i]);
+			}
+			// Create the custom query tab
+			createQueryTab();
+		} catch (NoDatabaseException ndbe) {
+			System.err.println(ndbe.getMessage());
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 
 	/**
@@ -134,7 +105,7 @@ public class ServerGUI {
 		gbl_panel.rowWeights = new double[]{1.0, 0.0, 0.0, Double.MIN_VALUE};
 		panel.setLayout(gbl_panel);
 		
-		JTabbedPane tabbedPane = new JTabbedPane(JTabbedPane.TOP);
+		tabbedPane = new JTabbedPane(JTabbedPane.TOP);
 		GridBagConstraints gbc_tabbedPane = new GridBagConstraints();
 		gbc_tabbedPane.gridwidth = 4;
 		gbc_tabbedPane.insets = new Insets(0, 0, 5, 0);
@@ -162,7 +133,7 @@ public class ServerGUI {
 		gbc_lblTableName_1.gridy = 1;
 		panel_3.add(lblTableName_1, gbc_lblTableName_1);
 		
-		textField_1 = new JTextField();
+		JTextField textField_1 = new JTextField();
 		GridBagConstraints gbc_textField_1 = new GridBagConstraints();
 		gbc_textField_1.gridwidth = 10;
 		gbc_textField_1.insets = new Insets(5, 5, 5, 5);
@@ -173,18 +144,19 @@ public class ServerGUI {
 		textField_1.setColumns(10);
 		
 		JButton btnGo = new JButton("Go");
+		btnGo.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				// Connect to the DB and create the table tabs
+				connectToDB(textField_1.getText());
+			}
+		});
 		GridBagConstraints gbc_btnGo = new GridBagConstraints();
 		gbc_btnGo.anchor = GridBagConstraints.WEST;
 		gbc_btnGo.insets = new Insets(0, 0, 0, 5);
 		gbc_btnGo.gridx = 1;
 		gbc_btnGo.gridy = 10;
 		panel_3.add(btnGo, gbc_btnGo);
-		
-		// Table(s) Panel -----------------------------------------
-		
-		for (int i = 0; i < tables.length; i++) {
-			createTableTabs(tabbedPane, tables[i]);
-		}
 		
 		JLabel lblRows = new JLabel("# Rows: ");
 		GridBagConstraints gbc_lblRows = new GridBagConstraints();
@@ -206,74 +178,6 @@ public class ServerGUI {
 		panel.add(lblCols, gbc_lblCols);
 		// By default the tables wont be showing
 		lblCols.setVisible(false);
-		
-		
-		// Custom Query Panel ---------------------------------------
-		
-		JPanel panel_2 = new JPanel();
-		tabbedPane.addTab("Query", null, panel_2, null);
-		GridBagLayout gbl_panel_2 = new GridBagLayout();
-		gbl_panel_2.columnWidths = new int[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-		gbl_panel_2.rowHeights = new int[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-		gbl_panel_2.columnWeights = new double[]{0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, Double.MIN_VALUE};
-		gbl_panel_2.rowWeights = new double[]{0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, Double.MIN_VALUE};
-		panel_2.setLayout(gbl_panel_2);
-		panel_2.setVisible(false);
-		
-		JLabel lblTableName = new JLabel("Table Name");
-		GridBagConstraints gbc_lblTableName = new GridBagConstraints();
-		gbc_lblTableName.anchor = GridBagConstraints.WEST;
-		gbc_lblTableName.gridwidth = 3;
-		gbc_lblTableName.insets = new Insets(0, 0, 5, 5);
-		gbc_lblTableName.gridx = 1;
-		gbc_lblTableName.gridy = 1;
-		panel_2.add(lblTableName, gbc_lblTableName);
-		
-		JTextField textField = new JTextField();
-		GridBagConstraints gbc_textField = new GridBagConstraints();
-		gbc_textField.gridwidth = 5;
-		gbc_textField.insets = new Insets(0, 0, 5, 5);
-		gbc_textField.fill = GridBagConstraints.HORIZONTAL;
-		gbc_textField.gridx = 1;
-		gbc_textField.gridy = 2;
-		panel_2.add(textField, gbc_textField);
-		textField.setColumns(10);
-		
-		JLabel lblQuery = new JLabel("Query");
-		GridBagConstraints gbc_lblQuery = new GridBagConstraints();
-		gbc_lblQuery.anchor = GridBagConstraints.WEST;
-		gbc_lblQuery.gridwidth = 2;
-		gbc_lblQuery.insets = new Insets(0, 0, 5, 5);
-		gbc_lblQuery.gridx = 1;
-		gbc_lblQuery.gridy = 4;
-		panel_2.add(lblQuery, gbc_lblQuery);
-		
-		JTextArea textArea = new JTextArea();
-		textArea.setTabSize(4);
-		GridBagConstraints gbc_textArea = new GridBagConstraints();
-		gbc_textArea.gridheight = 5;
-		gbc_textArea.gridwidth = 13;
-		gbc_textArea.insets = new Insets(0, 0, 5, 5);
-		gbc_textArea.fill = GridBagConstraints.BOTH;
-		gbc_textArea.gridx = 1;
-		gbc_textArea.gridy = 5;
-		panel_2.add(textArea, gbc_textArea);
-		
-		JButton btnSubmit = new JButton("Submit");
-		btnSubmit.addMouseListener(new MouseAdapter() {
-			@Override
-			public void mouseClicked(MouseEvent e) {
-				System.out.println(textField.getText().equals(""));
-				System.out.println("=====================");
-				System.out.println(textArea.getText());
-			}
-		});
-		GridBagConstraints gbc_btnSubmit = new GridBagConstraints();
-		gbc_btnSubmit.insets = new Insets(0, 0, 0, 5);
-		gbc_btnSubmit.gridx = 1;
-		gbc_btnSubmit.gridy = 10;
-		panel_2.add(btnSubmit, gbc_btnSubmit);
-		
 		
 		// Event Handlers
 		
@@ -308,6 +212,78 @@ public class ServerGUI {
 		// FIX SORTING HERE
 		table.setAutoCreateRowSorter(true);
 		scrollPane.setViewportView(table);
+	}
+	
+	private void createQueryTab() {
+		JPanel panel_2 = new JPanel();
+		tabbedPane.addTab("Query", null, panel_2, null);
+		GridBagLayout gbl_panel_2 = new GridBagLayout();
+		gbl_panel_2.columnWidths = new int[]{93, 0, 0};
+		gbl_panel_2.rowHeights = new int[]{0, 0, 0, 0, 0, 0, 0, 0};
+		gbl_panel_2.columnWeights = new double[]{1.0, 0.0, Double.MIN_VALUE};
+		gbl_panel_2.rowWeights = new double[]{0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0};
+		panel_2.setLayout(gbl_panel_2);
+		
+		JLabel lblQuery = new JLabel("Query");
+		GridBagConstraints gbc_lblQuery = new GridBagConstraints();
+		gbc_lblQuery.anchor = GridBagConstraints.WEST;
+		gbc_lblQuery.insets = new Insets(0, 0, 5, 5);
+		gbc_lblQuery.gridx = 0;
+		gbc_lblQuery.gridy = 2;
+		panel_2.add(lblQuery, gbc_lblQuery);
+		
+		JScrollPane scrollPane = new JScrollPane();
+		GridBagConstraints gbc_scrollPane = new GridBagConstraints();
+		gbc_scrollPane.gridheight = 2;
+		gbc_scrollPane.gridwidth = 2;
+		gbc_scrollPane.fill = GridBagConstraints.BOTH;
+		gbc_scrollPane.insets = new Insets(0, 0, 5, 0);
+		gbc_scrollPane.gridx = 0;
+		gbc_scrollPane.gridy = 3;
+		panel_2.add(scrollPane, gbc_scrollPane);
+		
+		JTextArea textArea = new JTextArea();
+		scrollPane.setViewportView(textArea);
+		textArea.setTabSize(4);
+		
+		JLabel lblOutput = new JLabel("Output");
+		GridBagConstraints gbc_lblOutput = new GridBagConstraints();
+		gbc_lblOutput.anchor = GridBagConstraints.WEST;
+		gbc_lblOutput.insets = new Insets(0, 0, 0, 0);
+		gbc_lblOutput.gridx = 0;
+		gbc_lblOutput.gridy = 6;
+		panel_2.add(lblOutput, gbc_lblOutput);
+		
+		JScrollPane scrollPane_1 = new JScrollPane();
+		GridBagConstraints gbc_scrollPane_1 = new GridBagConstraints();
+		gbc_scrollPane_1.gridheight = 1;
+		gbc_scrollPane_1.gridwidth = 2;
+		gbc_scrollPane_1.fill = GridBagConstraints.BOTH;
+		gbc_scrollPane_1.insets = new Insets(0, 0, 0, 0);
+		gbc_scrollPane_1.gridx = 0;
+		gbc_scrollPane_1.gridy = 7;
+		panel_2.add(scrollPane_1, gbc_scrollPane_1);
+		
+		JTextArea textArea_1 = new JTextArea();
+		scrollPane_1.setViewportView(textArea_1);
+		textArea_1.setTabSize(4);
+		
+		JButton btnSubmit = new JButton("Submit");
+		btnSubmit.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				textArea_1.setText("");
+				if(textArea.getText().equals("")) {
+					textArea_1.setText("Enter a query first...");
+				} else {
+					textArea_1.setText(ServerConnection.customQuery(textArea.getText()));
+				}
+			}
+		});
+		GridBagConstraints gbc_btnSubmit = new GridBagConstraints();
+		gbc_btnSubmit.gridx = 1;
+		gbc_btnSubmit.gridy = 10;
+		panel_2.add(btnSubmit, gbc_btnSubmit);
 	}
 
 }

@@ -1,5 +1,7 @@
 package main;
 
+import exceptions.NoDatabaseException;
+
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -9,9 +11,30 @@ import java.sql.Statement;
 import java.util.ArrayList;
 
 public class ServerConnection {
+	
+	static {
+		try {
+			Class.forName("org.sqlite.JDBC");
+		} catch (Exception e) {
+			System.err.println(e.getMessage());
+		}
+	}
+	
+	private static Connection connection = null;
+	private static Statement statement = null;
+	
 	/*
 	// Debugging + Testing
-	public static void main(String[] args) throws ClassNotFoundException{
+	public static void main(String[] args) throws ClassNotFoundException, SQLException {
+	
+		// cleanup
+		Runtime.getRunTime().addShutdownHook(new Thread() {
+			public void run() {
+				closeConnection();
+			}
+		});
+		
+		
 		DataTable[] data = accessDatabase();
 		
 		for (int i = 0; i < data.length; i++) {
@@ -35,28 +58,34 @@ public class ServerConnection {
 			}
 			System.out.println("===================");
 		}
+		String fullPath = "/Users/christian/Documents/workspace/SQLGUI/src/main/test.db";
+		accessDatabase(fullPath);
+		customQuery("SELECT * FROM second");
+	}*/
+	
+	public static void accessDatabase(String fullPath) throws ClassNotFoundException, SQLException {
+		connection = DriverManager.getConnection("jdbc:sqlite:" + fullPath);
+		statement = connection.createStatement();
+		statement.setQueryTimeout(15);
 	}
-	*/
 	
 	/**
 	 * Connect to a database, CURRENTLY HARDCODED, then return the data stored
 	 * there in the form of an array for parsing by the gui
+	 * Pre-req that accessDataBase() was called to initialize the connection
 	 * @return An array of DataTable objects with length according to number
 	 * of tables found in the database.
 	 * @throws ClassNotFoundException
 	 */
-	public static DataTable[] accessDatabase() throws ClassNotFoundException {
-		Class.forName("org.sqlite.JDBC");
+	public static DataTable[] getTableInfo() {
 		
-		Connection connection = null;
 		// List of DataTable objects corresponding to each table
 		DataTable[] DTarray = null;
 		
 		try {
-			connection = DriverManager.getConnection("jdbc:sqlite:/Users/christian/Documents/workspace/SQLGUI/src/main/test.db");
-			Statement statement = connection.createStatement();
-			statement.setQueryTimeout(15);
-			
+			if (connection == null) 
+				throw new NoDatabaseException();
+				
 			ResultSet rs = null;
 			// List of tables
 			ArrayList<String> tables = new ArrayList<String>();
@@ -73,18 +102,11 @@ public class ServerConnection {
 			DTarray = new DataTable[tables.size()];
 			// Load data for each table
 			for (int i = 0; i < tables.size(); i++) {
-				DTarray[i] = populateDataTables(tables.get(i), statement, rs, connection);
+				DTarray[i] = populateDataTables(tables.get(i), statement, rs);
 			}
 			
 		} catch (SQLException e) {
 			System.err.println(e.getMessage());
-		} finally {
-			try {
-				if (connection != null)
-					connection.close();
-			} catch (SQLException e) {
-				System.err.println(e);
-			}
 		}
 		
 		// Return null if error or data if success. MAKE THIS AN OBJECT LATER
@@ -92,16 +114,16 @@ public class ServerConnection {
 	}
 	
 	/**
-	 * Create The DataTable objects that contain data about each table
+	 * Create The DataTable objects that contain data about each table.
+	 * Pre-req that accessDataBase() was called to initialize the connection
 	 * @param tableName - String
 	 * @param statement - Statement Object
 	 * @param rs - ResultSet Object
-	 * @param connection - Connection Object
 	 * @return DataTable object with info about parameter table
 	 * @throws SQLException
 	 */
 	private static DataTable populateDataTables(String tableName, Statement statement, 
-			ResultSet rs, Connection connection) throws SQLException {
+			ResultSet rs) throws SQLException {
 		
 		DataTable dt = new DataTable();
 		// Will contain data for the whole table
@@ -193,4 +215,50 @@ public class ServerConnection {
 		return dt;
 	}
 
+	public static String customQuery(String query) {
+		String returnString = "";
+		try {
+			if (connection == null) 
+				throw new NoDatabaseException();
+			
+			statement.execute(query);
+			ResultSet rs = statement.getResultSet();
+			
+			if (rs != null) {
+				ResultSetMetaData rsmd = rs.getMetaData();
+				int numCols = rsmd.getColumnCount();
+				
+				while (rs.next()) {
+					for (int i = 1; i <= numCols; i++) {
+						returnString += rs.getString(i) + "\t";
+					}
+				}
+			} else {
+				int count = statement.getUpdateCount();
+				returnString += Integer.toString(count) + " Entries Updated";
+			}
+			
+		} catch (SQLException e) {
+			returnString = e.getMessage();
+		} finally {
+			try {
+				if (connection != null)
+					connection.close();
+			} catch (SQLException e) {
+				System.err.println(e);
+			}
+		}
+		return returnString;
+	}
+	
+	public static void closeConnection() {
+		try {
+			if (connection != null) {
+				connection.close();
+				System.out.println("Connection Closed!");
+			}
+		} catch (SQLException e) {
+			System.err.println(e);
+		}
+	}
 }

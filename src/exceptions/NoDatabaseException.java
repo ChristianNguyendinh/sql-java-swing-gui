@@ -1,6 +1,8 @@
 package exceptions;
 
-public class NoDatabaseException extends Exception {
+import java.sql.SQLException;
+
+public class NoDatabaseException extends SQLException {
 	// Default serial uid
 	private static final long serialVersionUID = 1L;
 	
@@ -10,8 +12,10 @@ public class NoDatabaseException extends Exception {
 	
 	@Override
 	public String getMessage() {
-		return "An empty database was accessed. This may be due to the provided path "
-				+ "to the database was bad, which caused an empty database"
-				+ "to be created at that path and attempted to be used.";
+		return "An empty or non-existant database was accessed. This may be due "
+				+ "to the provided path to the database was bad, which caused "
+				+ "an empty database to be created at that path and attempted "
+				+ "to be used. Or accessDataBase() has not been called yet to "
+				+ "initialize the connection";
 	}
 }
