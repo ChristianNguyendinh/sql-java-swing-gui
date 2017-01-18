@@ -1,3 +1,4 @@
 sqlite-jdbc-3.16.1.jar
 bin/
 .settings/
+src/main/test.db
