@@ -14,8 +14,11 @@ public class DataTable {
 	public int numRows;
 	public int numCols;
 	
+	/** Column names of a table, ordered corresponding to data */
 	private String[] columnNames;
+	/** 2D array representing data of a table */
 	private Object[][] data;
+	/** Used for tool tip display of each column type */
 	private String typesArrayString;
 
 	

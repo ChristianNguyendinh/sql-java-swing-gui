@@ -2,6 +2,10 @@ package exceptions;
 
 import java.sql.SQLException;
 
+/**
+ * There's actually not really a big need for this subclass :)
+ * @author christian
+ */
 public class NoDatabaseException extends SQLException {
 	// Default serial uid
 	private static final long serialVersionUID = 1L;
